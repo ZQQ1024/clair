@@ -18,7 +18,6 @@ import (
 	"flag"
 	"math/rand"
 	"os"
-	"os/exec"
 	"os/signal"
 	"runtime/pprof"
 	"strings"
@@ -52,10 +51,10 @@ import (
 	_ "github.com/quay/clair/v2/ext/vulnmdsrc/nvd"
 	_ "github.com/quay/clair/v2/ext/vulnsrc/alpine"
 	_ "github.com/quay/clair/v2/ext/vulnsrc/amzn"
-	_ "github.com/quay/clair/v2/ext/vulnsrc/debian"
-	_ "github.com/quay/clair/v2/ext/vulnsrc/oracle"
-	_ "github.com/quay/clair/v2/ext/vulnsrc/rhel"
-	_ "github.com/quay/clair/v2/ext/vulnsrc/ubuntu"
+	//_ "github.com/quay/clair/v2/ext/vulnsrc/debian"
+	//_ "github.com/quay/clair/v2/ext/vulnsrc/oracle"
+	//_ "github.com/quay/clair/v2/ext/vulnsrc/rhel"
+	//_ "github.com/quay/clair/v2/ext/vulnsrc/ubuntu"
 )
 
 func waitForSignals(signals ...os.Signal) {
@@ -128,12 +127,12 @@ func main() {
 	flag.Parse()
 
 	// Check for dependencies.
-	for _, bin := range []string{"git", "rpm", "xz"} {
-		_, err := exec.LookPath(bin)
-		if err != nil {
-			log.WithError(err).WithField("dependency", bin).Fatal("failed to find dependency")
-		}
-	}
+	//for _, bin := range []string{"git", "rpm", "xz"} {
+	//	_, err := exec.LookPath(bin)
+	//	if err != nil {
+	//		log.WithError(err).WithField("dependency", bin).Fatal("failed to find dependency")
+	//	}
+	//}
 
 	// Load configuration
 	config, err := LoadConfig(*flagConfigPath)

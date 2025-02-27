@@ -367,6 +367,12 @@ func (lv *lockableVulnerability) appendFunc(metadataKey string, metadata interfa
 // It helps simplifying the fetchers that share the same metadata about a
 // Vulnerability regardless of their actual namespace (ie. same vulnerability
 // information for every version of a distro).
+// 这里的功能为，合并多个vuln，这些vuln相同的name有不用的FixedIn。
+// 但是存在以下bug，满足以下2个条件才会触发：
+// - vuln顺序返回不稳定导致合并后FixedIn FeatureVersion版本顺序不一致
+// - FixedIn，FeatureVersion Name相同但是Version不同，如dotnet6-build同一个CVE，有多个修复版本（6.0.122-r0、6.0.124-r0，上游数据问题）
+// 因为 vulnerability.FixedIn, updateFixedIn = applyFixedInDiff(existingVulnerability.FixedIn, vulnerability.FixedIn) 存在去重机制
+// 导致去重后留下的数据不稳定，updateFixedIn = true，导致这部分vuln每次更新会被删除后插入
 func doVulnerabilitiesNamespacing(vulnerabilities []database.Vulnerability) []database.Vulnerability {
 	vulnerabilitiesMap := make(map[string]*database.Vulnerability)
 

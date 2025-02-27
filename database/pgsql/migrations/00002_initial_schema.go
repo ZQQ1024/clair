@@ -27,23 +27,24 @@ func init() {
 
 			`CREATE TABLE IF NOT EXISTS Layer (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(128) NOT NULL UNIQUE,
+        name VARCHAR(128) NOT NULL,
         engineversion SMALLINT NOT NULL,
         parent_id INT NULL REFERENCES Layer ON DELETE CASCADE,
         namespace_id INT NULL REFERENCES Namespace,
-        created_at TIMESTAMP WITH TIME ZONE);`,
+        created_at TIMESTAMP WITH TIME ZONE,
+        CONSTRAINT layer_name_unique UNIQUE (name));`, // insertLayer没有使用默认的unique index名字layer_name_key，这里适配修改
 			`CREATE INDEX ON Layer (parent_id);`,
 			`CREATE INDEX ON Layer (namespace_id);`,
 
 			`CREATE TABLE IF NOT EXISTS Feature (
         id SERIAL PRIMARY KEY,
-        namespace_id INT NOT NULL REFERENCES Namespace,
+        namespace_id INT NOT NULL REFERENCES Namespace ON DELETE CASCADE,
         name VARCHAR(128) NOT NULL,
         UNIQUE (namespace_id, name));`,
 
 			`CREATE TABLE IF NOT EXISTS FeatureVersion (
         id SERIAL PRIMARY KEY,
-        feature_id INT NOT NULL REFERENCES Feature,
+        feature_id INT NOT NULL REFERENCES Feature ON DELETE CASCADE,
         version VARCHAR(128) NOT NULL);`,
 			`CREATE INDEX ON FeatureVersion (feature_id);`,
 
@@ -51,7 +52,7 @@ func init() {
 			`CREATE TABLE IF NOT EXISTS Layer_diff_FeatureVersion (
         id SERIAL PRIMARY KEY,
         layer_id INT NOT NULL REFERENCES Layer ON DELETE CASCADE,
-        featureversion_id INT NOT NULL REFERENCES FeatureVersion,
+        featureversion_id INT NOT NULL REFERENCES FeatureVersion ON DELETE CASCADE,
         modification modification NOT NULL,
         UNIQUE (layer_id, featureversion_id));`,
 			`CREATE INDEX ON Layer_diff_FeatureVersion (layer_id);`,
@@ -61,7 +62,7 @@ func init() {
 			`CREATE TYPE severity AS ENUM ('Unknown', 'Negligible', 'Low', 'Medium', 'High', 'Critical', 'Defcon1');`,
 			`CREATE TABLE IF NOT EXISTS Vulnerability (
         id SERIAL PRIMARY KEY,
-        namespace_id INT NOT NULL REFERENCES Namespace,
+        namespace_id INT NOT NULL REFERENCES Namespace ON DELETE CASCADE,
         name VARCHAR(128) NOT NULL,
         description TEXT NULL,
         link VARCHAR(128) NULL,
@@ -73,7 +74,7 @@ func init() {
 			`CREATE TABLE IF NOT EXISTS Vulnerability_FixedIn_Feature (
         id SERIAL PRIMARY KEY,
         vulnerability_id INT NOT NULL REFERENCES Vulnerability ON DELETE CASCADE,
-        feature_id INT NOT NULL REFERENCES Feature,
+        feature_id INT NOT NULL REFERENCES Feature ON DELETE CASCADE,
         version VARCHAR(128) NOT NULL,
         UNIQUE (vulnerability_id, feature_id));`,
 			`CREATE INDEX ON Vulnerability_FixedIn_Feature (feature_id, vulnerability_id);`,
@@ -81,7 +82,7 @@ func init() {
 			`CREATE TABLE IF NOT EXISTS Vulnerability_Affects_FeatureVersion (
         id SERIAL PRIMARY KEY,
         vulnerability_id INT NOT NULL REFERENCES Vulnerability ON DELETE CASCADE,
-        featureversion_id INT NOT NULL REFERENCES FeatureVersion,
+        featureversion_id INT NOT NULL REFERENCES FeatureVersion ON DELETE CASCADE,
         fixedin_id INT NOT NULL REFERENCES Vulnerability_FixedIn_Feature ON DELETE CASCADE,
         UNIQUE (vulnerability_id, featureversion_id));`,
 			`CREATE INDEX ON Vulnerability_Affects_FeatureVersion (fixedin_id);`,

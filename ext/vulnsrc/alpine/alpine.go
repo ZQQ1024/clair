@@ -21,13 +21,15 @@ import (
 	"encoding/hex"
 	"io"
 	"io/ioutil"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/PuerkitoBio/goquery"
 
@@ -39,7 +41,7 @@ import (
 
 const (
 	// secdbGitURL  = "https://github.com/alpinelinux/alpine-secdb"
-	baseURL  = "https://secdb.alpinelinux.org/"
+	baseURL      = "https://secdb.alpinelinux.org/"
 	updaterFlag  = "alpine-secdbUpdater"
 	nvdURLPrefix = "https://cve.mitre.org/cgi-bin/cvename.cgi?name="
 )
@@ -50,8 +52,8 @@ func init() {
 
 type updater struct {
 	repositoryLocalPath string
-	currentDir string
-	hash_slice [][32] byte
+	currentDir          string
+	hash_slice          [][32]byte
 }
 
 func (u *updater) processFile(filename string) {
@@ -77,7 +79,7 @@ func (u *updater) processFile(filename string) {
 	// find hash of file contents as part of checking for changes
 	file_hasher := sha256.New()
 	fileContents, err := ioutil.ReadAll(response.Body)
-	file_hasher.Write([] byte(fileContents[:]))
+	file_hasher.Write([]byte(fileContents[:]))
 
 	// Must be a better way to achieve this...
 	var file_hash [32]byte
@@ -116,16 +118,16 @@ func (u *updater) processVersions(index int, element *goquery.Selection) {
 	if exists {
 		if href != "../" {
 			// create Version directory
-			os.Mkdir(filepath.Join(u.repositoryLocalPath, href),0700)
+			os.Mkdir(filepath.Join(u.repositoryLocalPath, href), 0700)
 			u.currentDir = href
 			u.processVersionDir(href)
 		}
 	}
 }
 
-func sliceXOR (a, b [32]byte) (result [32]byte) {
+func sliceXOR(a, b [32]byte) (result [32]byte) {
 	var tmpval [32]byte
-	for i:=0; i<32; i++ {
+	for i := 0; i < 32; i++ {
 		tmpval[i] = a[i] ^ b[i]
 	}
 	result = tmpval
@@ -164,7 +166,7 @@ func (u *updater) getVulnFiles(repoPath, tempDirPrefix string) (commit string, e
 
 	// Find XOR of all file hash values to use as commit hash replacement. Used to detect for changes to source files
 	var tmp_commit [32]byte
-	for i:=0; i < len(u.hash_slice); i++ {
+	for i := 0; i < len(u.hash_slice); i++ {
 		tmp_commit = sliceXOR(tmp_commit, u.hash_slice[i])
 	}
 	commit = hex.EncodeToString(tmp_commit[:])
@@ -322,13 +324,15 @@ func parseYAML(r io.Reader) (vulns []database.Vulnerability, err error) {
 
 	for _, pack := range file.Packages {
 		pkg := pack.Pkg
-		for version, vulnStrs := range pkg.Fixes {
+		// 解决map遍历顺序随机
+		theSortedVersionKeys := slices.Sorted(maps.Keys(pkg.Fixes))
+		for _, version := range theSortedVersionKeys {
 			err := versionfmt.Valid(dpkg.ParserName, version)
 			if err != nil {
 				log.WithError(err).WithField("version", version).Warning("could not parse package version. skipping")
 				continue
 			}
-
+			vulnStrs := pkg.Fixes[version]
 			for _, vulnStr := range vulnStrs {
 				var vuln database.Vulnerability
 				vuln.Severity = database.UnknownSeverity

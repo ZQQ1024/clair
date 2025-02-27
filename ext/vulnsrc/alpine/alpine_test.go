@@ -40,3 +40,22 @@ func TestYAMLParsing(t *testing.T) {
 	assert.Equal(t, "apache2", vulns[0].FixedIn[0].Feature.Name)
 	assert.Equal(t, "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-5387", vulns[0].Link)
 }
+
+func TestYAMLParsingDuplicateCVE(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
+	path := filepath.Join(filepath.Dir(filename))
+
+	testData, _ := os.Open(path + "/testdata/v317_main.yaml")
+	defer testData.Close()
+
+	vulns, err := parseYAML(testData)
+	if err != nil {
+		assert.Nil(t, err)
+	}
+	assert.Equal(t, 6, len(vulns))
+	assert.Equal(t, "CVE-2024-23984", vulns[0].Name)
+	assert.Equal(t, "alpine:v3.17", vulns[0].FixedIn[0].Feature.Namespace.Name)
+	assert.Equal(t, "intel-ucode", vulns[0].FixedIn[0].Feature.Name)
+	assert.Equal(t, "20240910-r0", vulns[0].FixedIn[0].Version)
+	assert.Equal(t, "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-23984", vulns[0].Link)
+}
